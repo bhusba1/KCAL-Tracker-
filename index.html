@@ -571,7 +571,7 @@ function renderSuggestion(){
             <button class="btn-decline" onclick="W.declineSuggestion()">Decline</button>
         </div>
         <div class="override-row three">
-            <input type="number" id="overrideGrams" placeholder="Grams" value="${escapeAttr(state.suggestionGrams)}" oninput="W.changeGrams(this.value)">
+            <input type="number" id="overrideGrams" placeholder="Grams" value="${escapeAttr(state.suggestionGrams)}">
             <input type="number" id="overrideCal" placeholder="Cal override" value="${escapeAttr(state.overrideInput)}">
             <div></div>
         </div>
@@ -593,6 +593,7 @@ function renderTargetsTab(){
             <div></div>
         </div>
         <button class="btn-primary" style="margin-top:20px" onclick="W.saveTargets()">Save Targets</button>
+        <div id="savedIndicator" style="font-size:13px;color:var(--success);margin-top:10px;text-align:center;font-weight:700;opacity:0;transition:opacity 0.3s"></div>
         <p style="font-size:12px;color:var(--text-dim);margin-top:8px;text-align:center">Targets carry forward until changed</p>
     </div>`;
 }
@@ -687,7 +688,11 @@ function bindTrackerEvents(){
             state.calorieInput=e.target.value;
             if(!isNaN(parseFloat(e.target.value))&&/^\d+\.?\d*$/.test(e.target.value.trim())){state.suggestion=null;}
             else{const f=findFood(e.target.value);state.suggestion=f;state.suggestionGrams='';}
-            const sb=document.querySelector('.suggestion-box');const parent=ci.parentElement.parentElement;
+            const sb=document.querySelector('.suggestion-box');
+            // Don't replace suggestion box if user is typing in override fields
+            const activeEl=document.activeElement;
+            const inOverride=activeEl&&(activeEl.id==='overrideGrams'||activeEl.id==='overrideCal');
+            if(inOverride)return;
             if(state.suggestion){
                 if(sb)sb.outerHTML=renderSuggestion();else ci.parentElement.insertAdjacentHTML('afterend',renderSuggestion());
                 bindOverrideInputs();
@@ -733,8 +738,31 @@ function bindTrackerEvents(){
 function bindOverrideInputs(){
     const og=document.getElementById('overrideGrams');
     const oc=document.getElementById('overrideCal');
-    if(oc){oc.oninput=e=>{state.overrideInput=e.target.value;};}}
-
+    if(og&&!og._bound){
+        og._bound=true;
+        og.addEventListener('input',e=>{
+            state.suggestionGrams=e.target.value;
+            const v=parseFloat(e.target.value);
+            if(state.suggestion&&v>0){
+                const orig=findFood(state.suggestion.name);
+                if(orig){
+                    state.suggestion=scaleFood(orig,v);
+                    const nameEl=document.querySelector('.suggestion-info .name');
+                    const servingEls=document.querySelectorAll('.suggestion-info .serving');
+                    const calEl=document.querySelector('.suggestion-info .cal');
+                    if(nameEl)nameEl.textContent=state.suggestion.name;
+                    if(calEl)calEl.textContent=state.suggestion.cal+' kcal';
+                    if(servingEls[0])servingEls[0].textContent=state.suggestion.serving+' ('+state.suggestion.grams+'g)';
+                    if(servingEls[1])servingEls[1].textContent='P:'+state.suggestion.p+'g · F:'+state.suggestion.f+'g · C:'+state.suggestion.c+'g';
+                }
+            }
+        });
+    }
+    if(oc&&!oc._bound){
+        oc._bound=true;
+        oc.addEventListener('input',e=>{state.overrideInput=e.target.value;});
+    }
+}
 function getMacroInputs(){
     return{p:parseFloat(state.proteinInput)||0,f:parseFloat(state.fatInput)||0,c:parseFloat(state.carbInput)||0};
 }
@@ -753,7 +781,6 @@ W.toggleTheme=()=>setTheme(state.theme==='dark'?'light':'dark');
 W.toggleAxisManual=()=>{state.axisAuto=!state.axisAuto;renderApp();};
 W.setTab=t=>{state.currentTab=t;renderApp();if(t==='targets')bindTargetEvents();};
 W.toggleMacroMode=()=>{state.macroMode=!state.macroMode;localStorage.setItem('macroMode',state.macroMode);renderApp();};
-W.toggleFullscreen=()=>{state.chartFullscreen=!state.chartFullscreen;renderApp();if(state.chartFullscreen){setTimeout(()=>{const c=document.querySelector('.chart-fullscreen');if(c)renderChart(c);},50);}};
 W.acceptSuggestion=()=>{
     if(state.suggestion){
         // Stage the value - don't submit. User hits + to record.
@@ -775,7 +802,17 @@ W.changeGrams=v=>{
     state.suggestionGrams=v;
     if(state.suggestion&&v){
         const orig=findFood(state.suggestion.name);
-        if(orig){state.suggestion=scaleFood(orig,parseFloat(v));const sb=document.querySelector('.suggestion-box');if(sb)sb.outerHTML=renderSuggestion();bindOverrideInputs();}
+        if(orig){
+            state.suggestion=scaleFood(orig,parseFloat(v));
+            // Update display text without replacing the input (keeps keyboard open)
+            const nameEl=document.querySelector('.suggestion-info .name');
+            const servingEls=document.querySelectorAll('.suggestion-info .serving');
+            const calEl=document.querySelector('.suggestion-info .cal');
+            if(nameEl)nameEl.textContent=state.suggestion.name;
+            if(calEl)calEl.textContent=state.suggestion.cal+' kcal';
+            if(servingEls[0])servingEls[0].textContent=state.suggestion.serving+' ('+state.suggestion.grams+'g)';
+            if(servingEls[1])servingEls[1].textContent='P:'+state.suggestion.p+'g · F:'+state.suggestion.f+'g · C:'+state.suggestion.c+'g';
+        }
     }
 };
 W.submitCalorie=()=>{
@@ -803,13 +840,19 @@ W.submitMacros=()=>{
     state.proteinInput='';state.fatInput='';state.carbInput='';
     renderApp();
 };
-W.saveTargets=()=>{
+W.saveTargets=async ()=>{
     state.maintenance=document.getElementById('tgtMaint')?.value||'';
     state.targetCal=document.getElementById('tgtCal')?.value||'';
     state.targetP=document.getElementById('tgtP')?.value||'';
     state.targetF=document.getElementById('tgtF')?.value||'';
     state.targetC=document.getElementById('tgtC')?.value||'';
-    saveSettings();renderApp();
+    await saveSettings();
+    const ind=document.getElementById('savedIndicator');
+    if(ind){
+        ind.textContent='✓ Saved';
+        ind.style.opacity='1';
+        setTimeout(()=>{ind.style.opacity='0';},2500);
+    }
 };
 
 W.toggleSelectAll=()=>{
