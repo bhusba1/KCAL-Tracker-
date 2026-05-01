@@ -185,7 +185,29 @@
         .tab-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px var(--accent-glow)}
         .targets-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
         .targets-grid .input-group{margin-bottom:0}
-        @media(max-width:480px){.container{padding:12px}.header{padding:14px 16px;border-radius:16px}.header h1{font-size:19px}.card{padding:16px;border-radius:16px}.battery-stats .total{font-size:22px}.data-table th,.data-table td{padding:10px 8px;font-size:13px}.targets-grid{grid-template-columns:1fr}}
+        .axis-grid input[type="date"]{min-height:42px}
+        .axis-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+        .axis-grid-2 input{padding:10px 12px;font-size:14px;min-height:42px}
+        .activity-summary{display:flex;gap:10px;padding:14px;background:var(--card2);border-radius:12px;margin-bottom:14px;border:1px solid var(--border)}
+        .activity-summary > div{flex:1;text-align:center}
+        .activity-summary .num{font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--accent)}
+        .activity-summary .num.cal{color:var(--cal)}
+        .activity-summary .num.macro{font-size:18px}
+        .activity-summary .lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;font-weight:700}
+        .activity-list{display:flex;flex-direction:column;gap:8px}
+        .activity-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card2);border-radius:12px;border:1px solid var(--border);border-left-width:3px}
+        .activity-row.cal{border-left-color:var(--cal)}
+        .activity-row.weight{border-left-color:var(--weight)}
+        .activity-row .time{font-size:11px;color:var(--text-dim);font-weight:700;min-width:64px;text-transform:uppercase;letter-spacing:.04em}
+        .activity-row .content{flex:1;min-width:0}
+        .activity-row .label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+        .activity-row .val{font-size:15px;font-weight:800;letter-spacing:-.01em}
+        .activity-row.cal .val{color:var(--cal)}
+        .activity-row.weight .val{color:var(--weight)}
+        .activity-row .macros{font-size:11px;color:var(--text-dim);margin-top:3px;font-weight:600}
+        .activity-empty{text-align:center;padding:48px 20px;color:var(--text-dim)}
+        .activity-empty .emoji{font-size:36px;margin-bottom:10px}
+        @media(max-width:480px){.container{padding:12px}.header{padding:14px 16px;border-radius:16px}.header h1{font-size:19px}.card{padding:16px;border-radius:16px}.battery-stats .total{font-size:22px}.data-table th,.data-table td{padding:10px 8px;font-size:13px}.targets-grid{grid-template-columns:1fr}.activity-row .time{min-width:56px}}
     </style>
 </head>
 <body class="theme-dark">
@@ -264,21 +286,29 @@ const FOOD_DB={
 'popcorn':{cal:31,p:1,f:0.4,c:6,serving:'1 cup',grams:8}
 };
 
+// ============ DATE HELPERS ============
+function todayLocal(){
+    const d=new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 // ============ STATE ============
 const state={
     user:null,token:null,entries:[],maintenance:'',
     targetCal:'',targetP:'',targetF:'',targetC:'',
-    currentDate:new Date().toISOString().split('T')[0],
+    currentDate:todayLocal(),
     theme:localStorage.getItem('theme')||'dark',
     showSettings:false,showDataTable:false,
     axisAuto:true,axisCalMin:0,axisCalMax:4000,axisWeightMin:140,axisWeightMax:200,
-    suggestion:null,suggestionGrams:'',
+    axisDateMin:'',axisDateMax:'',
+    suggestion:null,suggestionGrams:'',suggestionName:'',
     calorieInput:'',overrideInput:'',weightInput:'',
     proteinInput:'',fatInput:'',carbInput:'',
     macroMode:localStorage.getItem('macroMode')==='true',
     excludeMacroFromCal:false,
     authMode:'login',authError:'',syncStatus:'synced',
     chart:null,selectedIds:new Set(),modal:null,
+    history:[],
     currentTab:'tracker',chartFullscreen:false
 };
 
@@ -369,7 +399,7 @@ function getChartData(){
     const map=getDateMap(),dates=Object.keys(map).sort();
     if(!dates.length)return{dates:[],calories:[],weights:[],cal7day:[],weight7day:[],maintenance:[]};
     const data=dates.map(d=>{const it=map[d];return{date:d,totalCal:it.calories.reduce((s,e)=>s+e.value,0),weight:it.weights.length?it.weights[it.weights.length-1].value:null};});
-    const today=new Date().toISOString().split('T')[0];
+    const today=todayLocal();
     const result=data.map((item,idx)=>{
         const isToday=item.date===today;
         const wEnd=isToday?idx:idx+1,wStart=isToday?Math.max(0,idx-7):Math.max(0,idx-6);
@@ -398,14 +428,20 @@ function getTodayStats(){
 }
 
 // ============ ACTIONS ============
-function addEntry(type,value,macros){
+function pushHistory(){
+    state.history.push(JSON.stringify(state.entries));
+    if(state.history.length>30)state.history.shift();
+}
+function addEntry(type,value,macros,name){
     const v=parseFloat(value);if(!v||isNaN(v))return;
-    const entry={id:Date.now()+Math.random(),date:state.currentDate,type,value:v};
+    pushHistory();
+    const entry={id:Date.now()+Math.random(),date:state.currentDate,type,value:v,time:Date.now()};
     if(macros){entry.protein=macros.p||0;entry.fat=macros.f||0;entry.carbs=macros.c||0;}
+    if(name)entry.name=name;
     state.entries.push(entry);saveEntries();renderApp();
 }
-function deleteSelected(){state.entries=state.entries.filter(e=>!state.selectedIds.has(e.id));state.selectedIds.clear();state.modal=null;saveEntries();renderApp();}
-function deleteAll(){state.entries=[];state.selectedIds.clear();state.modal=null;saveEntries();renderApp();}
+function deleteSelected(){pushHistory();state.entries=state.entries.filter(e=>!state.selectedIds.has(e.id));state.selectedIds.clear();state.modal=null;saveEntries();renderApp();}
+function deleteAll(){pushHistory();state.entries=[];state.selectedIds.clear();state.modal=null;saveEntries();renderApp();}
 async function handleAuth(email,password){
     state.authError='';
     try{
@@ -426,8 +462,20 @@ function formatDate(iso){try{return new Date(iso+'T00:00:00').toLocaleDateString
 function renderChart(container){
     const canvas=container?container.querySelector('#mainChart'):document.getElementById('mainChart');
     if(!canvas)return;
-    const data=getChartData();
+    let data=getChartData();
     if(!data.dates.length){canvas.parentElement.innerHTML='<div class="empty-state"><div class="emoji">📊</div><div class="text">Add data to see your chart</div></div>';return;}
+    const dMin=state.axisDateMin,dMax=state.axisDateMax;
+    if(dMin||dMax){
+        const ndates=[],ncal=[],nw=[],ncal7=[],nw7=[],nm=[];
+        data.dates.forEach((d,i)=>{
+            if(dMin&&d<dMin)return;
+            if(dMax&&d>dMax)return;
+            ndates.push(d);ncal.push(data.calories[i]);nw.push(data.weights[i]);
+            ncal7.push(data.cal7day[i]);nw7.push(data.weight7day[i]);nm.push(data.maintenance[i]);
+        });
+        data={dates:ndates,calories:ncal,weights:nw,cal7day:ncal7,weight7day:nw7,maintenance:nm};
+    }
+    if(!data.dates.length){canvas.parentElement.innerHTML='<div class="empty-state"><div class="emoji">📊</div><div class="text">No data in selected date range</div></div>';return;}
     if(state.chart)state.chart.destroy();
     const isDark=state.theme==='dark';
     const gc=isDark?'rgba(255,255,255,.06)':'rgba(15,23,42,.06)';
@@ -462,18 +510,22 @@ function renderApp(){
                 <div class="sync-indicator"><span class="sync-dot ${state.syncStatus==='syncing'?'syncing':state.syncStatus==='error'?'error':''}"></span><span class="sync-text">${state.syncStatus==='syncing'?'Syncing':state.syncStatus==='error'?'Error':'Synced'}</span></div>
             </div>
             <div class="header-buttons">
+                ${state.history.length>0?`<button class="icon-btn" onclick="W.undo()" title="Undo last change">↶</button>`:''}
                 <button class="icon-btn" onclick="W.toggleSettings()">⚙</button>
             </div>
         </div>
         ${state.showSettings?renderSettingsCard():''}
         <div class="tab-bar">
             <button class="tab-btn ${state.currentTab==='tracker'?'active':''}" onclick="W.setTab('tracker')">Tracker</button>
+            <button class="tab-btn ${state.currentTab==='activity'?'active':''}" onclick="W.setTab('activity')">Activity</button>
             <button class="tab-btn ${state.currentTab==='targets'?'active':''}" onclick="W.setTab('targets')">Targets</button>
         </div>
-        ${state.currentTab==='tracker'?renderTrackerTab(stats,trend,calCount,wtCount):renderTargetsTab()}
+        ${state.currentTab==='tracker'?renderTrackerTab(stats,trend,calCount,wtCount):state.currentTab==='activity'?renderActivityTab():renderTargetsTab()}
     </div>
     ${state.modal?renderModal():''}`;
     if(state.currentTab==='tracker'){bindTrackerEvents();renderChart();}
+    if(state.currentTab==='activity'){bindActivityEvents();}
+    bindSettingsAxisInputs();
 }
 
 function renderTrackerTab(stats,trend,calCount,wtCount){
@@ -578,6 +630,54 @@ function renderSuggestion(){
     </div>`;
 }
 
+function renderActivityTab(){
+    const dayEntries=state.entries
+        .filter(e=>e.date===state.currentDate)
+        .sort((a,b)=>(b.time||0)-(a.time||0));
+    const cals=dayEntries.filter(e=>e.type==='calorie');
+    const wts=dayEntries.filter(e=>e.type==='weight');
+    const totalCal=cals.reduce((s,e)=>s+e.value,0);
+    const totalP=cals.reduce((s,e)=>s+(e.protein||0),0);
+    const totalF=cals.reduce((s,e)=>s+(e.fat||0),0);
+    const totalC=cals.reduce((s,e)=>s+(e.carbs||0),0);
+    const isToday=state.currentDate===todayLocal();
+    const dateLabel=isToday?'Today':formatDate(state.currentDate);
+
+    return `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+            <div>
+                <div class="card-title" style="margin-bottom:4px">Activity Log</div>
+                <div style="font-size:14px;font-weight:700">${dateLabel}</div>
+            </div>
+            <input type="date" id="activityDateInput" value="${state.currentDate}" style="max-width:170px;padding:10px 12px;font-size:14px;min-height:42px">
+        </div>
+        <div class="activity-summary">
+            <div><div class="num">${cals.length}</div><div class="lbl">Entries</div></div>
+            <div><div class="num cal">${Math.round(totalCal)}</div><div class="lbl">kcal</div></div>
+            ${state.macroMode?`
+            <div><div class="num macro" style="color:var(--protein)">${Math.round(totalP)}</div><div class="lbl">Protein g</div></div>
+            <div><div class="num macro" style="color:var(--fat)">${Math.round(totalF)}</div><div class="lbl">Fat g</div></div>
+            <div><div class="num macro" style="color:var(--carb)">${Math.round(totalC)}</div><div class="lbl">Carbs g</div></div>
+            `:''}
+        </div>
+        ${dayEntries.length===0?`<div class="activity-empty"><div class="emoji">📝</div><div>No entries yet for ${dateLabel.toLowerCase()}</div></div>`:`
+        <div class="activity-list">
+            ${dayEntries.map(e=>{
+                const t=e.time?new Date(e.time):null;
+                const ts=t?t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'—';
+                if(e.type==='weight'){
+                    return `<div class="activity-row weight"><div class="time">${ts}</div><div class="content"><div class="label">⚖ Weight</div><div class="val">${e.value.toFixed(1)} lbs</div></div></div>`;
+                }
+                const name=e.name?e.name.replace(/^./,c=>c.toUpperCase()):'Calories';
+                const hasMacros=e.protein||e.fat||e.carbs;
+                const macros=hasMacros?`<div class="macros">P:${Math.round(e.protein||0)}g · F:${Math.round(e.fat||0)}g · C:${Math.round(e.carbs||0)}g</div>`:'';
+                return `<div class="activity-row cal"><div class="time">${ts}</div><div class="content"><div class="label">🍽 ${name}</div><div class="val">${Math.round(e.value)} kcal</div>${macros}</div></div>`;
+            }).join('')}
+        </div>`}
+        ${wts.length>1?`<div style="font-size:12px;color:var(--text-dim);margin-top:12px;text-align:center">${wts.length} weight entries — chart uses the latest</div>`:''}
+    </div>`;
+}
+
 function renderTargetsTab(){
     return `<div class="card">
         <div class="card-title">Calorie Targets</div>
@@ -599,10 +699,16 @@ function renderTargetsTab(){
 }
 
 function renderSettingsCard(){
+    const hasDateRange=state.axisDateMin||state.axisDateMax;
     return `<div class="card"><div class="card-title">Settings</div>
         <div class="settings-row"><div><div class="label">Light theme</div><div class="desc">Switch between dark and light</div></div><div class="toggle ${state.theme==='light'?'on':''}" onclick="W.toggleTheme()"></div></div>
         <div class="settings-row"><div style="flex:1"><div class="label">Manual axis ranges</div><div class="desc">Custom min/max for chart</div></div><div class="toggle ${!state.axisAuto?'on':''}" onclick="W.toggleAxisManual()"></div></div>
         ${!state.axisAuto?`<div class="axis-grid"><input type="number" id="axisCalMin" placeholder="Cal min" value="${state.axisCalMin}"><input type="number" id="axisCalMax" placeholder="Cal max" value="${state.axisCalMax}"><input type="number" id="axisWeightMin" placeholder="Wt min" value="${state.axisWeightMin}"><input type="number" id="axisWeightMax" placeholder="Wt max" value="${state.axisWeightMax}"></div>`:''}
+        <div class="settings-row" style="border-bottom:none;padding-bottom:4px"><div style="flex:1"><div class="label">Chart date range</div><div class="desc">Limit chart x-axis to a date window. Leave blank for auto.</div></div>${hasDateRange?`<button class="icon-btn sm" onclick="W.clearDateRange()">Clear</button>`:''}</div>
+        <div class="axis-grid-2">
+            <input type="date" id="axisDateMin" value="${state.axisDateMin||''}" placeholder="Min date">
+            <input type="date" id="axisDateMax" value="${state.axisDateMax||''}" placeholder="Max date">
+        </div>
     </div>`;
 }
 
@@ -728,11 +834,22 @@ function bindTrackerEvents(){
         }
     });
 
-    ['axisCalMin','axisCalMax','axisWeightMin','axisWeightMax'].forEach(id=>{
-        const el=document.getElementById(id);if(el)el.onchange=e=>{state[id]=e.target.value;renderApp();};
-    });
-
     bindOverrideInputs();
+}
+
+function bindSettingsAxisInputs(){
+    ['axisCalMin','axisCalMax','axisWeightMin','axisWeightMax','axisDateMin','axisDateMax'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el&&!el._bound){
+            el._bound=true;
+            el.onchange=e=>{state[id]=e.target.value;renderApp();};
+        }
+    });
+}
+
+function bindActivityEvents(){
+    const di=document.getElementById('activityDateInput');
+    if(di)di.onchange=e=>{state.currentDate=e.target.value;renderApp();};
 }
 
 function bindOverrideInputs(){
@@ -769,6 +886,7 @@ function getMacroInputs(){
 
 function clearInputs(){
     state.calorieInput='';state.suggestion=null;state.overrideInput='';state.suggestionGrams='';
+    state.suggestionName='';
     state.proteinInput='';state.fatInput='';state.carbInput='';
 }
 
@@ -779,6 +897,7 @@ W.toggleDataTable=()=>{state.showDataTable=!state.showDataTable;renderApp();};
 W.logout=()=>logout();
 W.toggleTheme=()=>setTheme(state.theme==='dark'?'light':'dark');
 W.toggleAxisManual=()=>{state.axisAuto=!state.axisAuto;renderApp();};
+W.clearDateRange=()=>{state.axisDateMin='';state.axisDateMax='';renderApp();};
 W.setTab=t=>{state.currentTab=t;renderApp();if(t==='targets')bindTargetEvents();};
 W.toggleMacroMode=()=>{state.macroMode=!state.macroMode;localStorage.setItem('macroMode',state.macroMode);renderApp();};
 W.acceptSuggestion=()=>{
@@ -787,6 +906,7 @@ W.acceptSuggestion=()=>{
         const s=state.suggestion;
         state.calorieInput=String(s.cal);
         state.overrideInput='';
+        state.suggestionName=s.name;
         // Auto-fill macros if macro mode is on
         if(state.macroMode){
             state.proteinInput=s.p?String(s.p):'';
@@ -821,13 +941,15 @@ W.submitCalorie=()=>{
     const v=(state.calorieInput||'').trim();
     const macros=getMacroInputs();
     const m=macros.p||macros.f||macros.c?macros:null;
+    const stagedName=state.suggestionName||null;
 
     if(override&&!isNaN(parseFloat(override))){
-        addEntry('calorie',override,m);clearInputs();
+        addEntry('calorie',override,m,stagedName);clearInputs();
     }else if(!isNaN(parseFloat(v))&&/^\d+\.?\d*$/.test(v)){
-        addEntry('calorie',v,m);clearInputs();
+        addEntry('calorie',v,m,stagedName);clearInputs();
     }else if(state.suggestion){
-        addEntry('calorie',state.suggestion.cal,{p:state.suggestion.p||0,f:state.suggestion.f||0,c:state.suggestion.c||0});clearInputs();
+        const s=state.suggestion;
+        addEntry('calorie',s.cal,{p:s.p||0,f:s.f||0,c:s.c||0},s.name);clearInputs();
     }
     renderApp();
 };
@@ -878,8 +1000,9 @@ W.editCal=(date)=>{
     const total=items.reduce((s,e)=>s+e.value,0);
     const nv=prompt(`Edit calories for ${formatDate(date)}:`,Math.round(total));
     if(nv===null)return;const v=parseFloat(nv);if(isNaN(v))return;
+    pushHistory();
     state.entries=state.entries.filter(e=>!(e.date===date&&e.type==='calorie'));
-    state.entries.push({id:Date.now()+Math.random(),date,type:'calorie',value:v});
+    state.entries.push({id:Date.now()+Math.random(),date,type:'calorie',value:v,time:Date.now()});
     saveEntries();renderApp();
 };
 W.editWt=(date)=>{
@@ -887,8 +1010,16 @@ W.editWt=(date)=>{
     const last=items[items.length-1].value;
     const nv=prompt(`Edit weight for ${formatDate(date)}:`,last.toFixed(1));
     if(nv===null)return;const v=parseFloat(nv);if(isNaN(v))return;
+    pushHistory();
     state.entries=state.entries.filter(e=>!(e.date===date&&e.type==='weight'));
-    state.entries.push({id:Date.now()+Math.random(),date,type:'weight',value:v});
+    state.entries.push({id:Date.now()+Math.random(),date,type:'weight',value:v,time:Date.now()});
+    saveEntries();renderApp();
+};
+
+W.undo=()=>{
+    if(!state.history.length)return;
+    state.entries=JSON.parse(state.history.pop());
+    state.selectedIds.clear();
     saveEntries();renderApp();
 };
 
@@ -897,10 +1028,10 @@ W.importPaste=()=>{
     const lines=ta.value.split('\n').filter(l=>l.trim());const ne=[];
     lines.forEach(line=>{const p=line.split(/[\t,|]/).map(x=>x.trim());if(p.length<2)return;
         const date=p[0],cal=parseFloat(p[1]),wt=p[2]?parseFloat(p[2]):null;
-        if(!isNaN(cal)&&cal>0)ne.push({id:Date.now()+Math.random(),date,type:'calorie',value:cal});
-        if(wt&&!isNaN(wt))ne.push({id:Date.now()+Math.random(),date,type:'weight',value:wt});
+        if(!isNaN(cal)&&cal>0)ne.push({id:Date.now()+Math.random(),date,type:'calorie',value:cal,time:Date.now()});
+        if(wt&&!isNaN(wt))ne.push({id:Date.now()+Math.random(),date,type:'weight',value:wt,time:Date.now()});
     });
-    if(ne.length){state.entries.push(...ne);saveEntries();renderApp();alert(`Imported ${ne.length} entries`);}
+    if(ne.length){pushHistory();state.entries.push(...ne);saveEntries();renderApp();alert(`Imported ${ne.length} entries`);}
     else alert('No valid entries found.');
 };
 
