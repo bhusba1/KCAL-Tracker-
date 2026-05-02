@@ -36,11 +36,11 @@
         html,body{height:100%;overscroll-behavior:none}
         body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;background:var(--bg-grad);background-attachment:fixed;color:var(--text);min-height:100vh;transition:background .4s,color .4s;padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom)+24px) env(safe-area-inset-left);-webkit-font-smoothing:antialiased}
         .container{max-width:880px;margin:0 auto;padding:16px}
-        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:18px 20px;background:var(--card);border-radius:20px;border:1px solid var(--border);box-shadow:var(--shadow);position:sticky;top:16px;z-index:50;backdrop-filter:blur(12px)}
-        .header-left{display:flex;flex-direction:column;gap:4px}
-        .header h1{font-size:22px;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .header-buttons{display:flex;gap:8px}
-        .icon-btn{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px 14px;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;min-height:40px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+        .header{display:flex;flex-direction:column;gap:14px;margin-bottom:20px;padding:18px 20px 16px;background:var(--card);border-radius:20px;border:1px solid var(--border);box-shadow:var(--shadow);position:sticky;top:24px;z-index:50;backdrop-filter:blur(12px)}
+        .header-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+        .header h1{font-size:24px;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .header-buttons{display:flex;gap:10px;justify-content:flex-end}
+        .icon-btn{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;min-height:48px;min-width:52px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
         .icon-btn:hover,.icon-btn:active{background:var(--accent);color:#fff;transform:translateY(-1px);box-shadow:0 4px 12px var(--accent-glow)}
         .icon-btn.danger:hover{background:var(--danger)}
         .icon-btn.sm{padding:6px 10px;font-size:12px;min-height:32px;min-width:36px;border-radius:8px}
@@ -205,6 +205,10 @@
         .activity-row.cal .val{color:var(--cal)}
         .activity-row.weight .val{color:var(--weight)}
         .activity-row .macros{font-size:11px;color:var(--text-dim);margin-top:3px;font-weight:600}
+        .activity-row .row-actions{display:flex;gap:6px;flex-shrink:0}
+        .activity-row .row-actions button{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;min-height:40px;min-width:40px;transition:all .15s}
+        .activity-row .row-actions button.edit:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+        .activity-row .row-actions button.del:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
         .activity-empty{text-align:center;padding:48px 20px;color:var(--text-dim)}
         .activity-empty .emoji{font-size:36px;margin-bottom:10px}
         @media(max-width:480px){.container{padding:12px}.header{padding:14px 16px;border-radius:16px}.header h1{font-size:19px}.card{padding:16px;border-radius:16px}.battery-stats .total{font-size:22px}.data-table th,.data-table td{padding:10px 8px;font-size:13px}.targets-grid{grid-template-columns:1fr}.activity-row .time{min-width:56px}}
@@ -344,11 +348,29 @@ async function fsSet(uid,tok,doc,fields){
     return r.ok;
 }
 
+function localEntriesKey(){return state.user?'entries_'+state.user.uid:null;}
+function backupEntriesLocal(){
+    const k=localEntriesKey();if(!k)return;
+    try{localStorage.setItem(k,JSON.stringify(state.entries));}catch(e){}
+}
+function readEntriesLocal(){
+    const k=localEntriesKey();if(!k)return [];
+    try{const v=localStorage.getItem(k);return v?JSON.parse(v)||[]:[];}catch(e){return [];}
+}
+
 async function loadUserData(){
     if(!state.user||!state.token)return;setSync('syncing');
-    try{
+    const localEntries=readEntriesLocal();
+    const doLoad=async ()=>{
         let ed=await fsGet(state.user.uid,state.token,'entries');
-        if(ed&&ed.fields&&ed.fields.data)state.entries=JSON.parse(ed.fields.data.stringValue);
+        let cloudEntries=[];
+        if(ed&&ed.fields&&ed.fields.data){
+            try{cloudEntries=JSON.parse(ed.fields.data.stringValue)||[];}catch(e){cloudEntries=[];}
+        }
+        // Merge: cloud is canonical, but rescue any local-only entries (saves that never landed)
+        const cloudIds=new Set(cloudEntries.map(e=>String(e.id)));
+        const localOnly=localEntries.filter(e=>!cloudIds.has(String(e.id)));
+        state.entries=[...cloudEntries,...localOnly];
         let md=await fsGet(state.user.uid,state.token,'settings');
         if(md&&md.fields){
             const f=md.fields;
@@ -358,22 +380,66 @@ async function loadUserData(){
             if(f.targetF)state.targetF=f.targetF.stringValue||'';
             if(f.targetC)state.targetC=f.targetC.stringValue||'';
         }
+        if(localOnly.length){
+            // Push recovered entries up so cloud catches up
+            await fsSet(state.user.uid,state.token,'entries',{data:{stringValue:JSON.stringify(state.entries)}});
+        }
+        backupEntriesLocal();
+    };
+    try{
+        await doLoad();
         setSync('synced');renderApp();
     }catch(e){
         console.error('Load error:',e);
         const ok=await refreshIdToken();
-        if(ok){try{
-            let ed=await fsGet(state.user.uid,state.token,'entries');
-            if(ed&&ed.fields&&ed.fields.data)state.entries=JSON.parse(ed.fields.data.stringValue);
-            let md=await fsGet(state.user.uid,state.token,'settings');
-            if(md&&md.fields){const f=md.fields;if(f.maintenance)state.maintenance=f.maintenance.stringValue||'';if(f.targetCal)state.targetCal=f.targetCal.stringValue||'';if(f.targetP)state.targetP=f.targetP.stringValue||'';if(f.targetF)state.targetF=f.targetF.stringValue||'';if(f.targetC)state.targetC=f.targetC.stringValue||'';}
-            setSync('synced');renderApp();
-        }catch(e2){setSync('error');clearUserState();renderApp();}}
-        else{setSync('error');clearUserState();renderApp();}
+        if(ok){
+            try{
+                await doLoad();
+                setSync('synced');renderApp();
+            }catch(e2){
+                // Cloud unreachable - keep local data so user doesn't lose work
+                state.entries=localEntries;setSync('error');renderApp();
+            }
+        }else{
+            // Auth refresh failed entirely - sign out
+            setSync('error');clearUserState();renderApp();
+        }
     }
 }
-async function saveEntries(){if(!state.user||!state.token)return;setSync('syncing');try{await fsSet(state.user.uid,state.token,'entries',{data:{stringValue:JSON.stringify(state.entries)}});setSync('synced');}catch(e){setSync('error');}}
-async function saveSettings(){if(!state.user||!state.token)return;setSync('syncing');try{await fsSet(state.user.uid,state.token,'settings',{maintenance:{stringValue:state.maintenance},targetCal:{stringValue:state.targetCal},targetP:{stringValue:state.targetP},targetF:{stringValue:state.targetF},targetC:{stringValue:state.targetC}});setSync('synced');}catch(e){setSync('error');}}
+
+let _saveInFlight=false,_saveScheduled=false;
+async function saveEntries(){
+    backupEntriesLocal();
+    if(!state.user||!state.token)return;
+    if(_saveInFlight){_saveScheduled=true;return;}
+    _saveInFlight=true;setSync('syncing');
+    try{
+        let ok=await fsSet(state.user.uid,state.token,'entries',{data:{stringValue:JSON.stringify(state.entries)}});
+        if(!ok){
+            const refreshed=await refreshIdToken();
+            if(refreshed){
+                ok=await fsSet(state.user.uid,state.token,'entries',{data:{stringValue:JSON.stringify(state.entries)}});
+            }
+        }
+        setSync(ok?'synced':'error');
+    }catch(e){setSync('error');}
+    finally{
+        _saveInFlight=false;
+        if(_saveScheduled){_saveScheduled=false;saveEntries();}
+    }
+}
+async function saveSettings(){
+    if(!state.user||!state.token)return;setSync('syncing');
+    const fields={maintenance:{stringValue:state.maintenance},targetCal:{stringValue:state.targetCal},targetP:{stringValue:state.targetP},targetF:{stringValue:state.targetF},targetC:{stringValue:state.targetC}};
+    try{
+        let ok=await fsSet(state.user.uid,state.token,'settings',fields);
+        if(!ok){
+            const refreshed=await refreshIdToken();
+            if(refreshed){ok=await fsSet(state.user.uid,state.token,'settings',fields);}
+        }
+        setSync(ok?'synced':'error');
+    }catch(e){setSync('error');}
+}
 function setSync(s){state.syncStatus=s;const d=document.querySelector('.sync-dot'),t=document.querySelector('.sync-text');if(d&&t){d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');t.textContent=s==='syncing'?'Syncing':s==='error'?'Error':'Synced';}}
 
 // ============ FOOD LOOKUP ============
@@ -483,15 +549,15 @@ function renderChart(container){
     const ds=[];
     if(state.maintenance){ds.push({type:'bar',label:'Maintenance',data:data.maintenance,backgroundColor:isDark?'rgba(245,158,11,.25)':'rgba(245,158,11,.35)',borderColor:'rgba(245,158,11,.5)',borderWidth:1,yAxisID:'yCal',order:4,categoryPercentage:.85,barPercentage:1});}
     ds.push({type:'bar',label:'Daily kCal',data:data.calories,backgroundColor:'rgba(239,68,68,.85)',borderColor:'rgba(239,68,68,1)',borderWidth:0,yAxisID:'yCal',order:3,categoryPercentage:.85,barPercentage:1});
-    ds.push({type:'line',label:'kCal 7d avg',data:data.cal7day,borderColor:'rgba(249,115,22,1)',backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,yAxisID:'yCal',tension:.3,order:2});
-    ds.push({type:'line',label:'Weight',data:data.weights,borderColor:'rgba(16,185,129,1)',backgroundColor:'rgba(16,185,129,1)',borderWidth:0,pointRadius:5,pointHoverRadius:7,showLine:false,yAxisID:'yWeight',spanGaps:true,order:1});
-    ds.push({type:'line',label:'Wt 7d avg',data:data.weight7day,borderColor:'rgba(139,92,246,1)',backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,borderDash:[6,4],yAxisID:'yWeight',spanGaps:true,tension:.3,order:0});
+    ds.push({type:'line',label:'kCal 7d avg',data:data.cal7day,borderColor:'rgba(249,115,22,1)',backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,pointHitRadius:14,yAxisID:'yCal',tension:.3,order:2});
+    ds.push({type:'line',label:'Weight',data:data.weights,borderColor:'rgba(16,185,129,1)',backgroundColor:'rgba(16,185,129,1)',borderWidth:0,pointRadius:5,pointHoverRadius:7,pointHitRadius:14,showLine:false,yAxisID:'yWeight',spanGaps:true,order:1});
+    ds.push({type:'line',label:'Wt 7d avg',data:data.weight7day,borderColor:'rgba(139,92,246,1)',backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,pointHitRadius:14,borderDash:[6,4],yAxisID:'yWeight',spanGaps:true,tension:.3,order:0});
     const wp=data.weights.map((w,i)=>w!==null?{x:i,y:w}:null).filter(p=>p);
-    if(wp.length>=2){const n=wp.length,sx=wp.reduce((s,p)=>s+p.x,0),sy=wp.reduce((s,p)=>s+p.y,0),sxy=wp.reduce((s,p)=>s+p.x*p.y,0),sx2=wp.reduce((s,p)=>s+p.x*p.x,0),sl=(n*sxy-sx*sy)/(n*sx2-sx*sx),int=(sy-sl*sx)/n;ds.push({type:'line',label:'Trend',data:data.dates.map((_,i)=>sl*i+int),borderColor:'rgba(6,182,212,.9)',backgroundColor:'transparent',borderWidth:2,pointRadius:0,yAxisID:'yWeight',order:0});}
+    if(wp.length>=2){const n=wp.length,sx=wp.reduce((s,p)=>s+p.x,0),sy=wp.reduce((s,p)=>s+p.y,0),sxy=wp.reduce((s,p)=>s+p.x*p.y,0),sx2=wp.reduce((s,p)=>s+p.x*p.x,0),sl=(n*sxy-sx*sy)/(n*sx2-sx*sx),int=(sy-sl*sx)/n;ds.push({type:'line',label:'Trend',data:data.dates.map((_,i)=>sl*i+int),borderColor:'rgba(6,182,212,.9)',backgroundColor:'transparent',borderWidth:2,pointRadius:0,pointHitRadius:14,yAxisID:'yWeight',order:0});}
     const calMax=Math.max(...data.calories,state.maintenance?parseFloat(state.maintenance):0)*1.15;
     const vw=data.weights.filter(w=>w!==null);
     const wMin=vw.length?Math.floor(Math.min(...vw)-3):140,wMax=vw.length?Math.ceil(Math.max(...vw)+3):200;
-    state.chart=new Chart(canvas,{data:{labels:data.dates,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:12,padding:10,usePointStyle:true}},tooltip:{backgroundColor:isDark?'#141b2e':'#fff',titleColor:isDark?'#f1f5f9':'#0f172a',bodyColor:isDark?'#cbd5e1':'#475569',borderColor:isDark?'#334155':'#e2e8f0',borderWidth:1,padding:12,cornerRadius:8}},scales:{x:{ticks:{color:tc,maxRotation:45,minRotation:45,font:{size:10}},grid:{display:false}},yWeight:{type:'linear',position:'left',title:{display:true,text:'Weight (lbs)',color:tc,font:{weight:'600'}},ticks:{color:tc},grid:{color:gc},min:state.axisAuto?wMin:parseFloat(state.axisWeightMin),max:state.axisAuto?wMax:parseFloat(state.axisWeightMax)},yCal:{type:'linear',position:'right',title:{display:true,text:'Calories',color:tc,font:{weight:'600'}},ticks:{color:tc},grid:{drawOnChartArea:false},min:state.axisAuto?0:parseFloat(state.axisCalMin),max:state.axisAuto?calMax:parseFloat(state.axisCalMax)}}}});
+    state.chart=new Chart(canvas,{data:{labels:data.dates,datasets:ds},options:{responsive:true,maintainAspectRatio:false,events:['click','touchstart'],interaction:{mode:'nearest',intersect:true},plugins:{legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:12,padding:10,usePointStyle:true}},tooltip:{enabled:true,mode:'nearest',intersect:true,backgroundColor:isDark?'#141b2e':'#fff',titleColor:isDark?'#f1f5f9':'#0f172a',bodyColor:isDark?'#cbd5e1':'#475569',borderColor:isDark?'#334155':'#e2e8f0',borderWidth:1,padding:12,cornerRadius:8}},scales:{x:{ticks:{color:tc,maxRotation:45,minRotation:45,font:{size:10}},grid:{display:false}},yWeight:{type:'linear',position:'left',title:{display:true,text:'Weight (lbs)',color:tc,font:{weight:'600'}},ticks:{color:tc},grid:{color:gc},min:state.axisAuto?wMin:parseFloat(state.axisWeightMin),max:state.axisAuto?wMax:parseFloat(state.axisWeightMax)},yCal:{type:'linear',position:'right',title:{display:true,text:'Calories',color:tc,font:{weight:'600'}},ticks:{color:tc},grid:{drawOnChartArea:false},min:state.axisAuto?0:parseFloat(state.axisCalMin),max:state.axisAuto?calMax:parseFloat(state.axisCalMax)}}}});
 }
 
 // ============ RENDER ============
@@ -505,13 +571,13 @@ function renderApp(){
     root.innerHTML=`
     <div class="container">
         <div class="header">
-            <div class="header-left">
+            <div class="header-row">
                 <h1>💪 KCAL</h1>
                 <div class="sync-indicator"><span class="sync-dot ${state.syncStatus==='syncing'?'syncing':state.syncStatus==='error'?'error':''}"></span><span class="sync-text">${state.syncStatus==='syncing'?'Syncing':state.syncStatus==='error'?'Error':'Synced'}</span></div>
             </div>
             <div class="header-buttons">
-                ${state.history.length>0?`<button class="icon-btn" onclick="W.undo()" title="Undo last change">↶</button>`:''}
-                <button class="icon-btn" onclick="W.toggleSettings()">⚙</button>
+                ${state.history.length>0?`<button class="icon-btn" onclick="W.undo()" title="Undo last change">↶ Undo</button>`:''}
+                <button class="icon-btn" onclick="W.toggleSettings()">⚙ Settings</button>
             </div>
         </div>
         ${state.showSettings?renderSettingsCard():''}
@@ -665,13 +731,15 @@ function renderActivityTab(){
             ${dayEntries.map(e=>{
                 const t=e.time?new Date(e.time):null;
                 const ts=t?t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'—';
+                const idStr=String(e.id);
+                const actions=`<div class="row-actions"><button class="edit" onclick="W.editEntry('${idStr}')" title="Edit">✏️</button><button class="del" onclick="W.deleteEntry('${idStr}')" title="Delete">🗑</button></div>`;
                 if(e.type==='weight'){
-                    return `<div class="activity-row weight"><div class="time">${ts}</div><div class="content"><div class="label">⚖ Weight</div><div class="val">${e.value.toFixed(1)} lbs</div></div></div>`;
+                    return `<div class="activity-row weight"><div class="time">${ts}</div><div class="content"><div class="label">⚖ Weight</div><div class="val">${e.value.toFixed(1)} lbs</div></div>${actions}</div>`;
                 }
                 const name=e.name?e.name.replace(/^./,c=>c.toUpperCase()):'Calories';
                 const hasMacros=e.protein||e.fat||e.carbs;
                 const macros=hasMacros?`<div class="macros">P:${Math.round(e.protein||0)}g · F:${Math.round(e.fat||0)}g · C:${Math.round(e.carbs||0)}g</div>`:'';
-                return `<div class="activity-row cal"><div class="time">${ts}</div><div class="content"><div class="label">🍽 ${name}</div><div class="val">${Math.round(e.value)} kcal</div>${macros}</div></div>`;
+                return `<div class="activity-row cal"><div class="time">${ts}</div><div class="content"><div class="label">🍽 ${name}</div><div class="val">${Math.round(e.value)} kcal</div>${macros}</div>${actions}</div>`;
             }).join('')}
         </div>`}
         ${wts.length>1?`<div style="font-size:12px;color:var(--text-dim);margin-top:12px;text-align:center">${wts.length} weight entries — chart uses the latest</div>`:''}
@@ -1021,6 +1089,35 @@ W.undo=()=>{
     state.entries=JSON.parse(state.history.pop());
     state.selectedIds.clear();
     saveEntries();renderApp();
+};
+
+W.deleteEntry=(idStr)=>{
+    const idx=state.entries.findIndex(e=>String(e.id)===idStr);
+    if(idx<0)return;
+    pushHistory();
+    state.entries.splice(idx,1);
+    saveEntries();renderApp();
+};
+W.editEntry=(idStr)=>{
+    const e=state.entries.find(x=>String(x.id)===idStr);
+    if(!e)return;
+    if(e.type==='weight'){
+        const nv=prompt('Edit weight (lbs):',e.value.toFixed(1));
+        if(nv===null)return;const v=parseFloat(nv);if(isNaN(v))return;
+        pushHistory();e.value=v;saveEntries();renderApp();
+        return;
+    }
+    const nv=prompt('Edit calories:',Math.round(e.value));
+    if(nv===null)return;const v=parseFloat(nv);if(isNaN(v))return;
+    pushHistory();
+    if(e.protein||e.fat||e.carbs){
+        // Scale macros proportionally so they stay consistent
+        const ratio=e.value>0?v/e.value:0;
+        e.protein=+(((e.protein||0)*ratio).toFixed(1));
+        e.fat=+(((e.fat||0)*ratio).toFixed(1));
+        e.carbs=+(((e.carbs||0)*ratio).toFixed(1));
+    }
+    e.value=v;saveEntries();renderApp();
 };
 
 W.importPaste=()=>{
