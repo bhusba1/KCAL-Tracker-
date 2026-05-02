@@ -287,7 +287,144 @@ const FOOD_DB={
 'water':{cal:0,p:0,f:0,c:0,serving:'any',grams:240},
 'tofu':{cal:76,p:8,f:4.8,c:1.9,serving:'100g',grams:100},
 'chips':{cal:152,p:2,f:10,c:15,serving:'1 oz',grams:28},
-'popcorn':{cal:31,p:1,f:0.4,c:6,serving:'1 cup',grams:8}
+'popcorn':{cal:31,p:1,f:0.4,c:6,serving:'1 cup',grams:8},
+// fruits
+'pineapple':{cal:82,p:0.9,f:0.2,c:22,serving:'1 cup',grams:165},
+'mango':{cal:99,p:1.4,f:0.6,c:25,serving:'1 cup',grams:165},
+'peach':{cal:58,p:1.4,f:0.4,c:14,serving:'1 medium',grams:150},
+'pear':{cal:101,p:0.6,f:0.2,c:27,serving:'1 medium',grams:178},
+'kiwi':{cal:42,p:0.8,f:0.4,c:10,serving:'1 medium',grams:69},
+'cherries':{cal:97,p:1.6,f:0.3,c:25,serving:'1 cup',grams:154},
+'raspberries':{cal:64,p:1.5,f:0.8,c:15,serving:'1 cup',grams:123},
+'blackberries':{cal:62,p:2,f:0.7,c:14,serving:'1 cup',grams:144},
+'cantaloupe':{cal:53,p:1.3,f:0.3,c:13,serving:'1 cup',grams:160},
+'lemon':{cal:17,p:0.6,f:0.2,c:5.4,serving:'1 medium',grams:58},
+'lime':{cal:20,p:0.5,f:0.1,c:7,serving:'1 medium',grams:67},
+'plum':{cal:30,p:0.5,f:0.2,c:8,serving:'1 medium',grams:66},
+'pomegranate':{cal:234,p:4.7,f:3.3,c:53,serving:'1 medium',grams:282},
+'dates':{cal:66,p:0.4,f:0,c:18,serving:'1 medium',grams:24},
+// vegetables
+'carrot':{cal:25,p:0.6,f:0.1,c:6,serving:'1 medium',grams:61},
+'cucumber':{cal:16,p:0.7,f:0.1,c:3.6,serving:'1/2 cup',grams:52},
+'tomato':{cal:22,p:1.1,f:0.2,c:4.8,serving:'1 medium',grams:123},
+'lettuce':{cal:5,p:0.5,f:0.1,c:1,serving:'1 cup',grams:36},
+'kale':{cal:33,p:2.9,f:0.6,c:6,serving:'1 cup',grams:67},
+'cabbage':{cal:22,p:1.1,f:0.1,c:5,serving:'1 cup',grams:89},
+'cauliflower':{cal:25,p:2,f:0.3,c:5,serving:'1 cup',grams:100},
+'asparagus':{cal:27,p:3,f:0.2,c:5,serving:'1 cup',grams:134},
+'green beans':{cal:31,p:1.8,f:0.2,c:7,serving:'1 cup',grams:100},
+'peas':{cal:117,p:8,f:0.6,c:21,serving:'1 cup',grams:160},
+'corn':{cal:88,p:3.4,f:1.4,c:19,serving:'1 ear',grams:90},
+'onion':{cal:44,p:1.2,f:0.1,c:10,serving:'1 medium',grams:110},
+'bell pepper':{cal:24,p:1,f:0.2,c:6,serving:'1 medium',grams:119},
+'mushrooms':{cal:21,p:3,f:0.3,c:3,serving:'1 cup',grams:96},
+'zucchini':{cal:33,p:2.4,f:0.6,c:6,serving:'1 medium',grams:196},
+'celery':{cal:6,p:0.3,f:0.1,c:1.2,serving:'1 stalk',grams:40},
+// proteins
+'lean beef':{cal:217,p:26,f:12,c:0,serving:'100g',grams:100},
+'sirloin':{cal:206,p:29,f:9,c:0,serving:'100g',grams:100},
+'pork chop':{cal:231,p:26,f:13,c:0,serving:'100g',grams:100},
+'ham':{cal:145,p:21,f:6,c:1.5,serving:'100g',grams:100},
+'lamb':{cal:294,p:25,f:21,c:0,serving:'100g',grams:100},
+'turkey breast':{cal:104,p:24,f:0.7,c:0,serving:'100g',grams:100},
+'ground turkey':{cal:148,p:19,f:8,c:0,serving:'100g',grams:100},
+'cod':{cal:82,p:18,f:0.7,c:0,serving:'100g',grams:100},
+'tilapia':{cal:96,p:20,f:1.7,c:0,serving:'100g',grams:100},
+'sardines':{cal:208,p:25,f:11,c:0,serving:'100g',grams:100},
+'crab':{cal:97,p:19,f:1.5,c:0,serving:'100g',grams:100},
+'lobster':{cal:89,p:19,f:0.9,c:0,serving:'100g',grams:100},
+'scallops':{cal:111,p:21,f:0.8,c:5,serving:'100g',grams:100},
+'egg white':{cal:17,p:3.6,f:0.1,c:0.2,serving:'1 large',grams:33},
+// dairy
+'cottage cheese':{cal:206,p:23,f:9,c:8,serving:'1 cup',grams:226},
+'mozzarella':{cal:78,p:6,f:6,c:1,serving:'1 oz',grams:28},
+'cheddar':{cal:114,p:7,f:9,c:0.4,serving:'1 oz',grams:28},
+'parmesan':{cal:122,p:11,f:8,c:1,serving:'1 oz',grams:28},
+'cream cheese':{cal:99,p:1.7,f:10,c:1.6,serving:'2 tbsp',grams:30},
+'sour cream':{cal:60,p:0.9,f:5.8,c:1.4,serving:'2 tbsp',grams:30},
+'almond milk':{cal:39,p:1,f:2.5,c:3.4,serving:'1 cup',grams:240},
+'oat milk':{cal:120,p:3,f:5,c:16,serving:'1 cup',grams:240},
+'whole milk':{cal:149,p:8,f:8,c:12,serving:'1 cup',grams:244},
+'skim milk':{cal:83,p:8,f:0.2,c:12,serving:'1 cup',grams:245},
+// grains/carbs
+'tortilla':{cal:104,p:3,f:2.5,c:18,serving:'1 medium',grams:30},
+'bagel':{cal:289,p:11,f:1.7,c:56,serving:'1 medium',grams:105},
+'english muffin':{cal:134,p:5,f:1,c:26,serving:'1 muffin',grams:57},
+'croissant':{cal:272,p:5,f:14,c:31,serving:'1 medium',grams:67},
+'pancake':{cal:175,p:4,f:7,c:22,serving:'1 medium',grams:77},
+'waffle':{cal:218,p:6,f:11,c:25,serving:'1 medium',grams:75},
+'cereal':{cal:120,p:2,f:1,c:27,serving:'1 cup',grams:30},
+'granola':{cal:300,p:7,f:13,c:42,serving:'1/2 cup',grams:60},
+'quinoa':{cal:222,p:8,f:3.5,c:39,serving:'1 cup',grams:185},
+'couscous':{cal:176,p:6,f:0.3,c:36,serving:'1 cup',grams:157},
+'noodles':{cal:219,p:7,f:3.3,c:40,serving:'1 cup',grams:160},
+'ramen':{cal:380,p:8,f:14,c:54,serving:'1 pack',grams:85},
+'crackers':{cal:80,p:1.4,f:3,c:11,serving:'5 crackers',grams:16},
+'pretzels':{cal:108,p:2.6,f:1,c:23,serving:'1 oz',grams:28},
+// nuts/seeds
+'walnuts':{cal:185,p:4.3,f:18,c:4,serving:'1 oz',grams:28},
+'cashews':{cal:157,p:5,f:12,c:9,serving:'1 oz',grams:28},
+'pistachios':{cal:159,p:6,f:13,c:8,serving:'1 oz',grams:28},
+'pecans':{cal:196,p:2.6,f:20,c:4,serving:'1 oz',grams:28},
+'peanuts':{cal:166,p:7,f:14,c:6,serving:'1 oz',grams:28},
+'sunflower seeds':{cal:165,p:6,f:14,c:7,serving:'1 oz',grams:28},
+'chia seeds':{cal:138,p:4.7,f:9,c:12,serving:'1 oz',grams:28},
+'flax seeds':{cal:150,p:5,f:12,c:8,serving:'1 oz',grams:28},
+// legumes
+'black beans':{cal:227,p:15,f:0.9,c:41,serving:'1 cup',grams:172},
+'kidney beans':{cal:225,p:15,f:0.9,c:40,serving:'1 cup',grams:177},
+'pinto beans':{cal:245,p:15,f:1.1,c:45,serving:'1 cup',grams:171},
+'chickpeas':{cal:269,p:15,f:4,c:45,serving:'1 cup',grams:164},
+'lentils':{cal:230,p:18,f:0.8,c:40,serving:'1 cup',grams:198},
+'hummus':{cal:166,p:8,f:10,c:14,serving:'1/2 cup',grams:123},
+'edamame':{cal:188,p:18,f:8,c:14,serving:'1 cup',grams:155},
+// fast food / meals
+'hot dog':{cal:290,p:10,f:18,c:24,serving:'1 with bun',grams:98},
+'fried chicken':{cal:320,p:24,f:19,c:11,serving:'100g',grams:100},
+'mac and cheese':{cal:310,p:11,f:13,c:35,serving:'1 cup',grams:200},
+'lasagna':{cal:336,p:19,f:14,c:34,serving:'1 cup',grams:227},
+'spaghetti':{cal:285,p:12,f:10,c:38,serving:'1 cup',grams:250},
+'meatballs':{cal:230,p:18,f:15,c:6,serving:'100g',grams:100},
+'pad thai':{cal:430,p:14,f:17,c:55,serving:'1 cup',grams:230},
+'fried rice':{cal:333,p:12,f:12,c:44,serving:'1 cup',grams:198},
+'lo mein':{cal:286,p:11,f:7,c:42,serving:'1 cup',grams:200},
+// snacks/sweets
+'chocolate':{cal:155,p:1.4,f:9,c:17,serving:'1 oz',grams:28},
+'dark chocolate':{cal:170,p:2,f:12,c:13,serving:'1 oz',grams:28},
+'candy bar':{cal:240,p:4,f:12,c:30,serving:'1 bar',grams:50},
+'gummies':{cal:150,p:3,f:0,c:34,serving:'1 oz',grams:40},
+'cake':{cal:235,p:3,f:10,c:35,serving:'1 slice',grams:80},
+'brownie':{cal:132,p:1.5,f:5,c:21,serving:'1 small',grams:30},
+'muffin':{cal:265,p:4,f:11,c:38,serving:'1 medium',grams:85},
+'cinnamon roll':{cal:309,p:5,f:14,c:42,serving:'1 medium',grams:88},
+'pie':{cal:296,p:2,f:14,c:43,serving:'1 slice',grams:117},
+// drinks
+'orange juice':{cal:111,p:1.7,f:0.5,c:26,serving:'1 cup',grams:248},
+'apple juice':{cal:114,p:0.2,f:0.3,c:28,serving:'1 cup',grams:248},
+'soda':{cal:140,p:0,f:0,c:39,serving:'12 oz',grams:355},
+'diet soda':{cal:0,p:0,f:0,c:0,serving:'12 oz',grams:355},
+'sports drink':{cal:80,p:0,f:0,c:21,serving:'12 oz',grams:355},
+'energy drink':{cal:110,p:0,f:0,c:28,serving:'8.4 oz',grams:250},
+'lemonade':{cal:99,p:0.2,f:0.1,c:26,serving:'1 cup',grams:248},
+'iced tea':{cal:91,p:0,f:0,c:24,serving:'1 cup',grams:240},
+'latte':{cal:135,p:8,f:7,c:11,serving:'12 oz',grams:355},
+'cappuccino':{cal:74,p:4,f:4,c:6,serving:'8 oz',grams:240},
+'whiskey':{cal:97,p:0,f:0,c:0,serving:'1.5 oz',grams:42},
+'vodka':{cal:97,p:0,f:0,c:0,serving:'1.5 oz',grams:42},
+'margarita':{cal:168,p:0.1,f:0.1,c:11,serving:'4 oz',grams:120},
+// condiments/extras
+'ketchup':{cal:17,p:0.2,f:0,c:4.5,serving:'1 tbsp',grams:17},
+'mayo':{cal:94,p:0.1,f:10,c:0.1,serving:'1 tbsp',grams:14},
+'mustard':{cal:3,p:0.2,f:0.2,c:0.3,serving:'1 tsp',grams:5},
+'ranch':{cal:73,p:0.4,f:8,c:1,serving:'1 tbsp',grams:15},
+'soy sauce':{cal:8,p:1.3,f:0,c:0.8,serving:'1 tbsp',grams:18},
+'salsa':{cal:9,p:0.4,f:0.1,c:2,serving:'2 tbsp',grams:32},
+'guacamole':{cal:45,p:0.6,f:4,c:3,serving:'2 tbsp',grams:30},
+'jam':{cal:56,p:0.1,f:0,c:14,serving:'1 tbsp',grams:20},
+'honey':{cal:64,p:0.1,f:0,c:17,serving:'1 tbsp',grams:21},
+'maple syrup':{cal:52,p:0,f:0,c:13,serving:'1 tbsp',grams:20},
+'sugar':{cal:49,p:0,f:0,c:13,serving:'1 tbsp',grams:13},
+'olive':{cal:5,p:0,f:0.5,c:0.3,serving:'1 olive',grams:4}
 };
 
 // ============ DATE HELPERS ============
@@ -784,10 +921,17 @@ function renderSettingsCard(){
         <div class="settings-row"><div><div class="label">Light theme</div><div class="desc">Switch between dark and light</div></div><div class="toggle ${state.theme==='light'?'on':''}" onclick="W.toggleTheme()"></div></div>
         <div class="settings-row"><div style="flex:1"><div class="label">Manual axis ranges</div><div class="desc">Custom min/max for chart</div></div><div class="toggle ${!state.axisAuto?'on':''}" onclick="W.toggleAxisManual()"></div></div>
         ${!state.axisAuto?`<div class="axis-grid"><input type="number" id="axisCalMin" placeholder="Cal min" value="${state.axisCalMin}"><input type="number" id="axisCalMax" placeholder="Cal max" value="${state.axisCalMax}"><input type="number" id="axisWeightMin" placeholder="Wt min" value="${state.axisWeightMin}"><input type="number" id="axisWeightMax" placeholder="Wt max" value="${state.axisWeightMax}"></div>`:''}
-        <div class="settings-row" style="border-bottom:none;padding-bottom:4px"><div style="flex:1"><div class="label">Chart date range</div><div class="desc">Limit chart x-axis to a date window. Leave blank for auto.</div></div>${hasDateRange?`<button class="icon-btn sm" onclick="W.clearDateRange()">Clear</button>`:''}</div>
+        <div class="settings-row" style="border-bottom:none;padding-bottom:4px"><div style="flex:1"><div class="label">Chart date range</div><div class="desc">Limit chart x-axis to a date window. Leave blank for auto.</div></div><span id="settingsClearDateSlot">${hasDateRange?`<button class="icon-btn sm" onclick="W.clearDateRange()">Clear</button>`:''}</span></div>
         <div class="axis-grid-2">
             <input type="date" id="axisDateMin" value="${state.axisDateMin||''}" placeholder="Min date">
             <input type="date" id="axisDateMax" value="${state.axisDateMax||''}" placeholder="Max date">
+        </div>
+        <div class="settings-row" style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px;border-bottom:none">
+            <div style="flex:1"><div class="label">Account</div><div class="desc">${state.user?.email||''}</div></div>
+            <div style="display:flex;gap:8px">
+                <button class="icon-btn sm" onclick="W.refreshApp()" title="Re-sync from cloud">⟳ Refresh</button>
+                <button class="icon-btn sm" onclick="W.logout()" title="Sign out">⎋ Logout</button>
+            </div>
         </div>
     </div>`;
 }
@@ -918,13 +1062,28 @@ function bindTrackerEvents(){
 }
 
 function bindSettingsAxisInputs(){
-    ['axisCalMin','axisCalMax','axisWeightMin','axisWeightMax','axisDateMin','axisDateMax'].forEach(id=>{
+    ['axisCalMin','axisCalMax','axisWeightMin','axisWeightMax'].forEach(id=>{
         const el=document.getElementById(id);
         if(el&&!el._bound){
             el._bound=true;
             el.onchange=e=>{state[id]=e.target.value;saveAxisPrefs();renderApp();};
         }
     });
+    ['axisDateMin','axisDateMax'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el&&!el._bound){
+            el._bound=true;
+            // Avoid full renderApp: rebuilding innerHTML while the native date
+            // picker is open closes it and commits today as a "default" value.
+            el.onchange=e=>{state[id]=e.target.value;saveAxisPrefs();renderChart();updateClearDateBtn();};
+        }
+    });
+}
+function updateClearDateBtn(){
+    const row=document.querySelector('#settingsClearDateSlot');
+    if(!row)return;
+    const has=state.axisDateMin||state.axisDateMax;
+    row.innerHTML=has?`<button class="icon-btn sm" onclick="W.clearDateRange()">Clear</button>`:'';
 }
 
 function bindActivityEvents(){
@@ -975,6 +1134,7 @@ const W={};
 W.toggleSettings=()=>{state.showSettings=!state.showSettings;renderApp();};
 W.toggleDataTable=()=>{state.showDataTable=!state.showDataTable;renderApp();};
 W.logout=()=>logout();
+W.refreshApp=async ()=>{if(state.user&&state.token){await loadUserData();}else{location.reload();}};
 W.toggleTheme=()=>setTheme(state.theme==='dark'?'light':'dark');
 W.toggleAxisManual=()=>{state.axisAuto=!state.axisAuto;saveAxisPrefs();renderApp();};
 W.clearDateRange=()=>{state.axisDateMin='';state.axisDateMax='';saveAxisPrefs();renderApp();};
