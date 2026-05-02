@@ -297,14 +297,26 @@ function todayLocal(){
 }
 
 // ============ STATE ============
+const _axisPrefs=(()=>{try{return JSON.parse(localStorage.getItem('axisPrefs'))||{};}catch(e){return {};}})();
+function saveAxisPrefs(){
+    try{localStorage.setItem('axisPrefs',JSON.stringify({
+        axisAuto:state.axisAuto,axisCalMin:state.axisCalMin,axisCalMax:state.axisCalMax,
+        axisWeightMin:state.axisWeightMin,axisWeightMax:state.axisWeightMax,
+        axisDateMin:state.axisDateMin,axisDateMax:state.axisDateMax
+    }));}catch(e){}
+}
 const state={
     user:null,token:null,entries:[],maintenance:'',
     targetCal:'',targetP:'',targetF:'',targetC:'',
     currentDate:todayLocal(),
     theme:localStorage.getItem('theme')||'dark',
     showSettings:false,showDataTable:false,
-    axisAuto:true,axisCalMin:0,axisCalMax:4000,axisWeightMin:140,axisWeightMax:200,
-    axisDateMin:'',axisDateMax:'',
+    axisAuto:_axisPrefs.axisAuto!==undefined?_axisPrefs.axisAuto:true,
+    axisCalMin:_axisPrefs.axisCalMin!==undefined?_axisPrefs.axisCalMin:0,
+    axisCalMax:_axisPrefs.axisCalMax!==undefined?_axisPrefs.axisCalMax:4000,
+    axisWeightMin:_axisPrefs.axisWeightMin!==undefined?_axisPrefs.axisWeightMin:140,
+    axisWeightMax:_axisPrefs.axisWeightMax!==undefined?_axisPrefs.axisWeightMax:200,
+    axisDateMin:_axisPrefs.axisDateMin||'',axisDateMax:_axisPrefs.axisDateMax||'',
     suggestion:null,suggestionGrams:'',suggestionName:'',
     calorieInput:'',overrideInput:'',weightInput:'',
     proteinInput:'',fatInput:'',carbInput:'',
@@ -910,7 +922,7 @@ function bindSettingsAxisInputs(){
         const el=document.getElementById(id);
         if(el&&!el._bound){
             el._bound=true;
-            el.onchange=e=>{state[id]=e.target.value;renderApp();};
+            el.onchange=e=>{state[id]=e.target.value;saveAxisPrefs();renderApp();};
         }
     });
 }
@@ -964,8 +976,8 @@ W.toggleSettings=()=>{state.showSettings=!state.showSettings;renderApp();};
 W.toggleDataTable=()=>{state.showDataTable=!state.showDataTable;renderApp();};
 W.logout=()=>logout();
 W.toggleTheme=()=>setTheme(state.theme==='dark'?'light':'dark');
-W.toggleAxisManual=()=>{state.axisAuto=!state.axisAuto;renderApp();};
-W.clearDateRange=()=>{state.axisDateMin='';state.axisDateMax='';renderApp();};
+W.toggleAxisManual=()=>{state.axisAuto=!state.axisAuto;saveAxisPrefs();renderApp();};
+W.clearDateRange=()=>{state.axisDateMin='';state.axisDateMax='';saveAxisPrefs();renderApp();};
 W.setTab=t=>{state.currentTab=t;renderApp();if(t==='targets')bindTargetEvents();};
 W.toggleMacroMode=()=>{state.macroMode=!state.macroMode;localStorage.setItem('macroMode',state.macroMode);renderApp();};
 W.acceptSuggestion=()=>{
